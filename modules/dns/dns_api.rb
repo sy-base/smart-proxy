@@ -6,8 +6,23 @@ module Proxy::Dns
     inject_attr :dns_provider, :server
 
     helpers ::Proxy::Helpers
-    authorize_with_trusted_hosts
-    authorize_with_ssl_client
+#    authorize_with_trusted_hosts
+#    authorize_with_ssl_client
+
+    get "/:fqdn" do
+      fqdn = params[:fqdn]
+      log_halt(400, "'lookup' requires fqdn parameter") if fqdn.nil?
+
+      begin
+        validate_dns_name!(fqdn, 'A')
+        server.get_ipv4_address!(fqdn)
+      rescue Proxy::Dns::NotFound => e
+        log_halt 404, e
+      rescue => e
+        log_halt 400, e
+      end
+
+    end
 
     post "/?" do
       fqdn = params[:fqdn]
